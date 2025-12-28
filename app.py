@@ -1,28 +1,56 @@
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 import pygetwindow as gw
 import pyautogui
+import re
 import time
 
 MAIL_URL = "https://webmail.eternalaccounts.net/"
 CREDENTIAL_FILE_LOCATION = r"C:\Users\myrez\Documents\Accounts1.txt"
 
+WEBMAIL_USERNAME_ID = "rcmloginuser"
+WEBMAIL_PASSWORD_ID = "rcmloginpwd"
 
 
-def test_selenium(email, password):
+def get_verification_code(email, password):
     service = Service(ChromeDriverManager().install())
     driver = webdriver.Chrome(service=service)
 
     driver.get(MAIL_URL)
 
-    email_box = driver.find_element(By.NAME, "email")  # or ID
-    email_box.click()          # focus
+    email_box = driver.find_element(By.ID, WEBMAIL_USERNAME_ID)
+    email_box.click() 
     email_box.send_keys(email)
 
-    password_box = driver.find_element(By.NAME, "password")
+    password_box = driver.find_element(By.ID, WEBMAIL_PASSWORD_ID)
     password_box.click()
     password_box.send_keys(password, Keys.ENTER)
+
+    time.sleep(10)
+
+    wait = WebDriverWait(driver, 20)
+
+    email_text = wait.until(
+        EC.presence_of_element_located((By.TAG_NAME, "body"))
+    ).text
+
+    match = re.search(
+    r"\b([A-Z0-9]{5})\b(?=\s+is your Jagex verification code)",
+    email_text
+)
+
+    if not match:
+        return ""
+
+    verification_code = match.group(1)
+    print("Verification code:", verification_code)
+    driver.quit()
+    return verification_code
 
 
 def focus_microbot():
@@ -38,23 +66,28 @@ def focus_microbot():
         win.restore()
 
     win.activate()
-    time.sleep(0.5)  # allow focus to settle
+    time.sleep(1)  # allow focus to settle
     return True
 
 
-def find_and_click_button(image, timeout=10, confidence=0.8):
+def find_and_click_button(image, timeout=25, confidence=0.6):
     start = time.time()
 
     while time.time() - start < timeout:
-        location = pyautogui.locateCenterOnScreen(
-            image,
-            confidence=confidence
-        )
+        try:
+            location = pyautogui.locateCenterOnScreen(
+                image,
+                confidence=confidence
+            )
+        except pyautogui.ImageNotFoundException:
+            # Image not found this iteration, just continue
+            location = None
 
         if location:
             pyautogui.click(location)
             print(f"Clicked {image}")
-            time.sleep(5)
+            sleep_time = 15 if "accounts" in image else 7
+            time.sleep(sleep_time)
             return True
 
         time.sleep(0.5)
@@ -63,13 +96,13 @@ def find_and_click_button(image, timeout=10, confidence=0.8):
     return False
 
 
-
 def handle_credentials():
     updated_lines = []
 
     with open(CREDENTIAL_FILE_LOCATION, "r") as f:
         for line in f:
             stripped = line.strip()
+            verification_code = ""
 
             if ":" not in stripped:
                 updated_lines.append(line)
@@ -81,31 +114,57 @@ def handle_credentials():
                 updated_lines.append(line)
                 continue
 
-            # Find button on microbot launcher
+            if not focus_microbot():
+                print("Could not focus microbot launcher")
+                exit
 
+            if not find_and_click_button("assets/add_accounts_button.png"):
+                print("Couldn't find the add account button.")
+                exit
 
-            print(username)
-            print(password)
-            print("-------")
+            if not find_and_click_button("assets/allow_cookies_button.png"):
+                print("Couldn't find the all cookies button!")
+                exit
+            
+            # Testing different logic 
+            if not find_and_click_button("assets/email_button.png"):
+                if not find_and_click_button("assets/email_button_other.png"):
+                    print("Can't find the login button")
+                    exit
+            # pyautogui.press('tab')
+            # time.sleep(0.5)
+            # pyautogui.press('tab')
+            # time.sleep(0.5)
+
+      
+
+            pyautogui.write(username, interval=0.05)  # types each character slowly
+            pyautogui.press('enter')
+            time.sleep(1)
+            pyautogui.write(password, interval=0.05)
+            pyautogui.press('enter')
+            time.sleep(1) 
+
+            verification_code = get_verification_code(username, password)
+
+            time.sleep(2)
+
+            if verification_code == "":
+                print("Invalid verification code.")
+                exit
+
+            time.sleep(5)
+
+            pyautogui.write(verification_code, interval=0.05)
+            pyautogui.press('enter')
 
             updated_lines.append(f"{username}:{password} - completed\n")
+            time.sleep(30)
 
     # with open(CREDENTIAL_FILE_LOCATION, "w") as f:
     #     f.writelines(updated_lines)
 
-# handle_credentials()
+handle_credentials()
 
-# if not focus_microbot():
-#     print("Could not focus microbot launcher")
-#     exit
 
-# if not find_and_click_button("assets/add_accounts_button.png"):
-#     print("Couldn't find the add account button.")
-#     exit
-
-# if not find_and_click_button("assets/allow_cookies_button.png"):
-#     print("Couldn't find the all cookies button!")
-#     exit
-
-test_selenium("test", "Test")
 
