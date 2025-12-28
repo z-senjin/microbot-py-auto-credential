@@ -7,6 +7,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 import pygetwindow as gw
 import pyautogui
+import sys
 import re
 import time
 
@@ -161,7 +162,12 @@ def handle_credentials():
 
             if verification_code == "":
                 print("Invalid verification code.")
-                exit
+                lines[i] = f"{username}:{password} - failed\n"
+
+                with open(CREDENTIAL_FILE_LOCATION, "w") as f:
+                    f.writelines(lines)
+                sys.exit("Invalid verification code. Stopping application.")
+
 
             time.sleep(2)
 
