@@ -16,9 +16,6 @@ CREDENTIAL_FILE_LOCATION = r"C:\Users\myrez\Documents\Accounts1.txt"
 WEBMAIL_USERNAME_ID = "rcmloginuser"
 WEBMAIL_PASSWORD_ID = "rcmloginpwd"
 
-# username = "gefami1316@hapreo.com"
-# password = "jojebe497!@!"
-
 def get_verification_code(email, password):
     service = Service(ChromeDriverManager().install())
     driver = webdriver.Chrome(service=service)
