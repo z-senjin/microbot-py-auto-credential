@@ -13,6 +13,8 @@ import time
 MAIL_URL = "https://webmail.eternalaccounts.net/"
 CREDENTIAL_FILE_LOCATION = r"C:\Users\myrez\Documents\Accounts1.txt"
 
+MICROBOT_TITLE = "Microbot Launcher"
+
 WEBMAIL_USERNAME_ID = "rcmloginuser"
 WEBMAIL_PASSWORD_ID = "rcmloginpwd"
 
@@ -30,7 +32,7 @@ def get_verification_code(email, password):
     password_box.click()
     password_box.send_keys(password, Keys.ENTER)
 
-    time.sleep(10)
+    time.sleep(5)
 
     wait = WebDriverWait(driver, 20)
 
@@ -53,7 +55,7 @@ def get_verification_code(email, password):
 
 
 def focus_microbot():
-    windows = gw.getWindowsWithTitle("Microbot Launcher")
+    windows = gw.getWindowsWithTitle(MICROBOT_TITLE)
 
     if not windows:
         print("Microbot Launcher not found")
@@ -65,18 +67,28 @@ def focus_microbot():
         win.restore()
 
     win.activate()
-    time.sleep(1)  # allow focus to settle
+    time.sleep(1)
     return True
 
 
-def find_and_click_button(image, timeout=25, confidence=0.6):
+def get_window_region(title_contains):
+    windows = gw.getWindowsWithTitle(title_contains)
+    if not windows:
+        return None
+
+    win = windows[0]
+    win.activate()        # bring to foreground
+    return (win.left, win.top, win.width, win.height)
+
+def find_and_click_button(image, timeout=25, confidence=0.6, region=None):
     start = time.time()
 
     while time.time() - start < timeout:
         try:
             location = pyautogui.locateCenterOnScreen(
                 image,
-                confidence=confidence
+                confidence=confidence,
+                region=region
             )
         except pyautogui.ImageNotFoundException:
             # Image not found this iteration, just continue
@@ -96,10 +108,13 @@ def find_and_click_button(image, timeout=25, confidence=0.6):
 
 
 def handle_credentials():
+    
     updated_lines = []
 
     with open(CREDENTIAL_FILE_LOCATION, "r") as f:
-        for line in f:
+        lines = f.readlines()
+
+        for i, line in enumerate(lines):
             stripped = line.strip()
             verification_code = ""
 
@@ -117,15 +132,15 @@ def handle_credentials():
                 print("Could not focus microbot launcher")
                 exit
 
-            if not find_and_click_button("assets/add_accounts_button.png"):
+            if not find_and_click_button("assets/add_accounts_button.png", region=get_window_region(MICROBOT_TITLE)):
                 print("Couldn't find the add account button.")
                 exit
 
-            if not find_and_click_button("assets/allow_cookies_button.png"):
+            if not find_and_click_button("assets/allow_cookies_button.png", timeout=10):
                 print("Couldn't find the all cookies button!")
                 exit
             
-            if not find_and_click_button("assets/email_button.png") and not find_and_click_button("assets/email_button_other.png"):
+            if not find_and_click_button("assets/email_button_other.png", timeout=10) and not find_and_click_button("assets/email_button.png", timeout=10):
                 print("Can't find the login button")
                 exit
             # pyautogui.press('tab')
@@ -148,16 +163,19 @@ def handle_credentials():
                 print("Invalid verification code.")
                 exit
 
-            time.sleep(5)
+            time.sleep(2)
 
             pyautogui.write(verification_code, interval=0.05)
             pyautogui.press('enter')
 
-            updated_lines.append(f"{username}:{password} - completed\n")
-            time.sleep(30)
+            lines[i] = f"{username}:{password} - completed\n"
 
-    with open(CREDENTIAL_FILE_LOCATION, "w") as f:
-        f.writelines(updated_lines)
+            with open(CREDENTIAL_FILE_LOCATION, "w") as f:
+                f.writelines(lines)
+            
+            print(f"Completed: {username}")
+
+            time.sleep(20)
 
 handle_credentials()
 
