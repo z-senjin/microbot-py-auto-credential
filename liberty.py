@@ -1,1 +1,0 @@
-print("hello my name is Liberty. I'm at my sister's house. This is my brother-in-law's computer.")

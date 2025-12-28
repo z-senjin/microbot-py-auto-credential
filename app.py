@@ -16,6 +16,8 @@ CREDENTIAL_FILE_LOCATION = r"C:\Users\myrez\Documents\Accounts1.txt"
 WEBMAIL_USERNAME_ID = "rcmloginuser"
 WEBMAIL_PASSWORD_ID = "rcmloginpwd"
 
+# username = "gefami1316@hapreo.com"
+# password = "jojebe497!@!"
 
 def get_verification_code(email, password):
     service = Service(ChromeDriverManager().install())
@@ -126,17 +128,13 @@ def handle_credentials():
                 print("Couldn't find the all cookies button!")
                 exit
             
-            # Testing different logic 
-            if not find_and_click_button("assets/email_button.png"):
-                if not find_and_click_button("assets/email_button_other.png"):
-                    print("Can't find the login button")
-                    exit
+            if not find_and_click_button("assets/email_button.png") and not find_and_click_button("assets/email_button_other.png"):
+                print("Can't find the login button")
+                exit
             # pyautogui.press('tab')
             # time.sleep(0.5)
             # pyautogui.press('tab')
             # time.sleep(0.5)
-
-      
 
             pyautogui.write(username, interval=0.05)  # types each character slowly
             pyautogui.press('enter')
@@ -161,8 +159,8 @@ def handle_credentials():
             updated_lines.append(f"{username}:{password} - completed\n")
             time.sleep(30)
 
-    # with open(CREDENTIAL_FILE_LOCATION, "w") as f:
-    #     f.writelines(updated_lines)
+    with open(CREDENTIAL_FILE_LOCATION, "w") as f:
+        f.writelines(updated_lines)
 
 handle_credentials()
 
